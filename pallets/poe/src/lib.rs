@@ -69,12 +69,13 @@ pub mod pallet {
 			let sender = ensure_signed(origin)?; // 校验 发送方
 			let bouned_claim = BoundedVec::<u8, T::MaxClaimLength>::try_from(claim.clone())
 				.map_err(|_| Error::<T>::ClaimTooLong)?; // 转换过程中出现错误返回ClaimTooLong
-			ensure!(Proofs::<T>::contains_key(&bouned_claim), Error::<T>::ProofAleadyExist); // 校验链上是否存在这个值，存在返回错误
-																				 // 插入键值对
+
+			ensure!(!Proofs::<T>::contains_key(&bouned_claim), Error::<T>::ProofAleadyExist); // 校验链上是否存在这个值，存在返回错误
+
 			Proofs::<T>::insert(
 				&bouned_claim,
 				(sender.clone(), frame_system::Pallet::<T>::block_number()),
-			);
+			); // 插入键值对
 
 			Self::deposit_event(Event::ClaimCreated(sender, claim));
 			// Return a successful DispatchResultWithPostInfo
