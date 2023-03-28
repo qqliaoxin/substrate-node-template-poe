@@ -255,6 +255,7 @@ impl pallet_balances::Config for Runtime {
 
 parameter_types! {
 	pub FeeMultiplier: Multiplier = Multiplier::one();
+	// pub const MaximumClaimLength: u32 = 512;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -278,8 +279,9 @@ impl pallet_template::Config for Runtime {
 
 /// Configure the pallet-template in pallets/template.
 impl pallet_poe::Config for Runtime {
-	type MaxCandidates = ConstU32<512>;
+	// type Event = Event;
 	type RuntimeEvent = RuntimeEvent;
+	type MaxClaimLength = ConstU32<512>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
