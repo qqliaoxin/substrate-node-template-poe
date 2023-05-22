@@ -5,6 +5,10 @@
 /// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
 
+// 测试用例
+#[cfg(test)]
+mod mock;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use frame_support::{dispatch::DispatchResultWithPostInfo, pallet_prelude::*};
@@ -28,12 +32,13 @@ pub mod pallet {
 	#[pallet::generate_store(pub(super) trait Store)]
 	pub struct Pallet<T>(_);
 
+	// 存储单元
 	#[pallet::storage]
 	pub type Proofs<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
 		BoundedVec<u8, T::MaxClaimLength>, // key 最大值
-		(T::AccountId, T::BlockNumber),    //value 存储参数
+		(T::AccountId, T::BlockNumber),    // value 存储参数
 	>;
 
 	// Pallets use events to inform users when important changes are made.
@@ -66,38 +71,31 @@ pub mod pallet {
 		// 创建存证
 		#[pallet::weight(0)]
 		pub fn create_claim(origin: OriginFor<T>, claim: Vec<u8>) -> DispatchResultWithPostInfo {
-			let sender = ensure_signed(origin)?; // 校验 发送方
+			let sender = ensure_signed(origin)?; // 签名 发送方
 			let bouned_claim = BoundedVec::<u8, T::MaxClaimLength>::try_from(claim.clone())
 				.map_err(|_| Error::<T>::ClaimTooLong)?; // 转换过程中出现错误返回ClaimTooLong
 
 			ensure!(!Proofs::<T>::contains_key(&bouned_claim), Error::<T>::ProofAleadyExist); // 校验链上是否存在这个值，存在返回错误
 
 			Proofs::<T>::insert(
-				&bouned_claim,
-				(sender.clone(), frame_system::Pallet::<T>::block_number()),
+				&bouned_claim,                                               // key
+				(sender.clone(), frame_system::Pallet::<T>::block_number()), // 插入当前区块数
 			); // 插入键值对
 
-			Self::deposit_event(Event::ClaimCreated(sender, claim));
-			// Return a successful DispatchResultWithPostInfo
+			Self::deposit_event(Event::ClaimCreated(sender, claim)); //触发事件
+														 // Return a successful DispatchResultWithPostInfo
 			Ok(().into())
 		}
 		// 删除存证
 		#[pallet::weight(0)]
 		pub fn revoke_claim(origin: OriginFor<T>, claim: Vec<u8>) -> DispatchResultWithPostInfo {
-			let sender = ensure_signed(origin)?;
+			let sender = ensure_signed(origin)?; // 发送方
 			let bouned_claim = BoundedVec::<u8, T::MaxClaimLength>::try_from(claim.clone())
 				.map_err(|_| Error::<T>::ClaimTooLong)?; // 转换过程中出现错误返回ClaimTooLong
 
-			// let owner = if let Ok((owner, _)) =
-			// 	Proofs::<T>::get(&bouned_claim).ok_or(Error::<T>::ClaimNotExist)
-			// {
-			// 	owner
-			// } else {
-			// 	todo!()
-			// };
 			let (owner, _) = Proofs::<T>::get(&bouned_claim).ok_or(Error::<T>::ClaimNotExist)?;
 			ensure!(sender == owner, Error::<T>::NotClaimOwner); // 检查 存证人和 owner 是否一致
-			Proofs::<T>::remove(&bouned_claim);
+			Proofs::<T>::remove(&bouned_claim); //存证删除
 			Self::deposit_event(Event::ClaimRevoked(sender, claim));
 			Ok(().into())
 		}
@@ -109,8 +107,9 @@ pub mod pallet {
 			claim: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
 			let sender = ensure_signed(origin)?;
-			let bouned_claim = BoundedVec::<u8, T::MaxClaimLength>::try_from(claim.clone())
-				.map_err(|_| Error::<T>::ClaimTooLong)?; // 转换过程中出现错误返回ClaimTooLong
+			let bouned_claim: BoundedVec<u8, <T as Config>::MaxClaimLength> =
+				BoundedVec::<u8, T::MaxClaimLength>::try_from(claim.clone())
+					.map_err(|_| Error::<T>::ClaimTooLong)?; // 转换过程中出现错误返回ClaimTooLong
 
 			let (owner, _) = Proofs::<T>::get(&bouned_claim).ok_or(Error::<T>::ClaimNotExist)?;
 			ensure!(owner == sender, Error::<T>::NotClaimOwner);
