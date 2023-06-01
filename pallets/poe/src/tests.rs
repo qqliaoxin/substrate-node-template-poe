@@ -5,9 +5,9 @@ use frame_support::{assert_noop, assert_ok, BoundedVec}; // 引入断言的一�
 #[test]
 fn create_claim_works() {
 	new_test_ext().execute_with(|| {
-		let claim = BoundedVec::try_from(vec![0, 1]).unwrap(); // key
-													   // 传入两个参数，发送方 AccountId = 1， key
-													   // 断言返回结果
+		let claim = BoundedVec::try_from(vec![0, 1]).unwrap();
+		// 传入两个参数，发送方 AccountId = 1， key
+		// 断言返回结果
 		assert_ok!(PoeModule::create_claim(RuntimeOrign::signed(1), claim.clone()));
 
 		// 断言储存值 是否相等
